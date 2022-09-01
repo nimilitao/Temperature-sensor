@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Serial Communication</title>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <style>
+        #chart_div{
+            width: 1200px;
+        }
+        body {
+            /* display: flex; */
+            justify-content: center;
+            align-items: center;
+        }
+        #text {
+            font-family: Arial, Verdana, Helvetica, sans-serif;
+            font-size: 14px;
+            border: 2px solid rgb(58, 58, 58);
+            border-radius: 7px;
+            text-transform: none;
+            overflow: auto;
+            text-align: left;
+            margin-top: 4px;
+            margin: 6px;
+            width: 97vw;
+            padding: 5px;
+            height: 45vh;
+        }
+    </style>
+
+    <div class="row">
+        <div class="column"  id=text></div>
+        <div class="column"  id="chart_div"></div>
+        <script type="text/javascript" 
+            src="https://www.gstatic.com/charts/loader.js"></script>
+        <script>
+            let maximo = Number.MAX_VALUE 
+            let minima = Number.MIN_VALUE
+
+            var chart;
+            var data;
+            var dados = 0;
+            let index = 0;
+
+            google.charts.load("current", {
+                packages: ["corechart", "line"]
+            });
+            // set a callback quando a api for carregada
+
+            google.charts.setOnLoadCallback(drawChart);
+            function drawChart(){
+                data = google.visualization.arrayToDataTable([
+                    ["tempo","Distancia"],
+                    [0,0]
+                ]);
+                let options = {
+                    title: "Distancia",
+                    hAxis:{
+                        title:"Tempo"
+                    },
+                    vAxis:{
+                        title:"Distancia"
+                    }
+                };
+                // desenha o grafico quando carregado
+                chart = new google.visualization.LineChart(
+                    document.getElementById("chart_div")
+                );
+                chart.draw(data,options);
+                setInterval(function(){
+                   // let random = Math.random() * 30 + 20;
+
+                    data.addRow([index, dados ]);
+                    chart.draw(data, options);
+
+                    index++;
+                }, 250);
+            }
+
+        
+
+        </script>    
+    </div>
+    <script>
+        function zerofill(i){return (i< 10? '0': '')+i}
+        function now(){
+            var d = new Date()
+            return d.getFullYear()+'_'
+              + zerofill((d.getMonth())+1) + "-"
+              + zerofill((d.getDate())) + "-"
+              + zerofill((d.getHours())) + ":"
+              + zerofill((d.getMinutes())) + ":"
+              + zerofill((d.getSeconds()))+ " "
+        }
+
+        var texto = document.getElementById('text');
+
+        var max = -100;
+        var min = 200
+
+        var socket = io.connect('http://localhost:8888');
+        socket.on('data', function(data){
+            var msgs = document.getElementById("text");
+            var txt  = msgs.innerHTML;
+            var oldData = dados;
+
+            dados = parseInt(data.data.replace(/\x0D\x0A/g,""));
+            console.log(dados);
+            if (isNaN(dados))
+            {
+                dados = oldData;
+            }
+            
+            var rep  = data.data.replace(/\x0D\x0A/g,"<br>");
+
+            if(dados < min)
+            {
+                min = dados;
+            }
+
+            if(dados > max)
+            {
+                max = dados;
+            }
+
+            txt = txt + "<br>" + "A temperatura de " + now() + "é: " + rep + "Menor temperatura: " + min + " - Maior temperatura: " + max + "<br>";
+            msgs.innerHTML = txt;
+            msgs.scrollTop = msgs.scrollHeight;
+
+
+
+        });
+
+    </script>
+
+</body>
+</html>
